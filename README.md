@@ -1,2 +1,0 @@
-# GAS
-Studying GAS
