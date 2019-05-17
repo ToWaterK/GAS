@@ -1,25 +1,28 @@
 /*受信トレイで受信したメールの件名が株価でかつ未読の場合、
-文面の銘柄コードを参照して株探（もしくはヤフーファイナンス）の株価データをスクレイピングして
-必要なデータでメール文章を作成し、株価メールを送って来たアドレスにメールを返信する。
+文面の銘柄コードで株探（もしくはヤフーファイナンス）の株価データをスクレイピングして
+現在の時間、時間毎の挨拶、銘柄コード、銘柄名、株価でメール文章を作成し、
+メールを送って来たアドレスに返信する。
+実際の使用にはトリガーを設定することが必要（5分毎に起動等）
+受信メールformat　件名＝株価、文章＝銘柄コードのみ（例：1951）
 */
 function myFunction() {
   var now = new Date();
   var hour = now.getHours();
-  var query = '(in:inbox is:unread "株価”)';　//条件　受信トレイ、未読、キーワード株価
+  var query = '(in:inbox is:unread "株価取得”)';　//条件　受信トレイ、未読、キーワード株価取得
   var threads = GmailApp.search(query, 0, 10);　//検索結果の0番目から10個のスレッドを格納
   var messages = GmailApp.getMessagesForThreads(threads); //2次元配列にスレッド毎のメッセージを格納
 
   for(var i=0; i < messages.length; i++) {　//2次元配列　行番号
     for(var j=0; j < messages[i].length; j++) {　//2次元配列　列番号
-      
+     
       var from = messages[i][j].getFrom();　//メールから送信者を抜き出す
       var subject = "株価　" + Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy/MM/dd/HH:mm:ss');　//返信メールの件名作成
-
+　　         
       var code = messages[i][j].getPlainBody().replace(/\r?\n/g,"");//メールから文章（銘柄コード）を抜きだす
       //replaceで文字列の改行を削除しないとUrlFetchappで無効な引数になる
 
       var body = '';　//bodyを初期化
-
+         
       //var url = "https://stocks.finance.yahoo.co.jp/stocks/detail/?code="+ code;
       var url = "https://kabutan.jp/stock/?code="+ code;　//文章から取り出した銘柄コードとスクレイピングするURLを結合
       var response = UrlFetchApp.fetch(url); //URL先からデータを取得
@@ -42,6 +45,7 @@ function myFunction() {
       
       //GmailApp.createDraft(from, subject, body);
       GmailApp.sendEmail(from, subject, body);　//メールを作成して送付
+      messages[i][j].markRead();　//処理を終了したメールを既読にする
     }
   }
 }
